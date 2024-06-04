@@ -1,6 +1,7 @@
 import HttpError from "../errors/HttpError";
 import { IProductItem, IProductList } from "../interfaces/IProduct.dto";
 import ProductRepository from "../repositories/product.repository";
+import database from "../database";
 
 export default class ProductService {
   repository = new ProductRepository();
@@ -23,9 +24,27 @@ export default class ProductService {
 
   async getProduct(dto: IProductItem) {
     if (dto.userID) {
-      var [row] = await this.repository.selectAuthorizedProduct(dto);
+      var row = await database.products.findOne(
+        {
+          id: dto.productID,
+          $or: [
+            { seller: dto.userID },
+            { transactions: { buyer: dto.userID } },
+          ],
+        },
+        {
+          populate: ["transactions"],
+        }
+      );
     } else {
-      var [row] = await this.repository.selectProduct(dto);
+      var row = await database.products.findOne(
+        {
+          id: dto.productID,
+        },
+        {
+          populate: ["transactions"],
+        }
+      );
     }
 
     if (!row) {

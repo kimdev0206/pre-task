@@ -7,6 +7,7 @@ import {
   httpErrorMiddleware,
   logMiddleware,
 } from "./middlewares";
+import database from "./database";
 
 export default class App {
   app: Application = express();
@@ -25,6 +26,7 @@ export default class App {
     this.app.use(cookieParser());
     this.app.use(express.json());
     this.app.use(logMiddleware);
+    this.app.use(database.connect);
   }
 
   initControllers() {

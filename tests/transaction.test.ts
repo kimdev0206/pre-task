@@ -1,8 +1,5 @@
 import request from "supertest";
 import { faker } from "@faker-js/faker";
-import { RowDataPacket } from "mysql2";
-import DeleteUser from "../scripts/delete-user";
-import InsertProduct from "../scripts/insert-product";
 import { ProductStatus } from "../src/interfaces/IProduct.dto";
 import App from "../src/app";
 import database from "../src/database";
@@ -10,13 +7,11 @@ import getUserID from "./utils";
 
 describe("거래 API", () => {
   const app = new App().app;
-  const price = faker.commerce.price({ dec: 0, min: 1_000, max: 10_000 });
+  const price = Number(
+    faker.commerce.price({ dec: 0, min: 1_000, max: 10_000 })
+  );
   let cookie: string;
   let userID: number;
-
-  beforeAll(() => database.connect());
-
-  afterAll(async () => await database.pool.end());
 
   describe("[사전작업] 쿠키발급", () => {
     const name = faker.internet.userName();
@@ -51,10 +46,16 @@ describe("거래 API", () => {
     let productID: number;
 
     it("1. 상품등록", async () => {
-      const { insertId } = await InsertProduct.run({ amount: 2, userID });
-      expect(insertId).toBeGreaterThan(0);
+      const product = database.products.create({
+        seller: userID,
+        name: faker.commerce.product(),
+        price,
+        amount: 2,
+        status: ProductStatus.판매중,
+      });
+      await database.em.flush();
 
-      productID = insertId;
+      expect(product.id).toBeGreaterThan(0);
     });
 
     it("2. 성공", async () => {
@@ -87,10 +88,18 @@ describe("거래 API", () => {
     let productID: number;
 
     it("1. 상품등록", async () => {
-      const { insertId } = await InsertProduct.run({ amount: 1, userID });
-      expect(insertId).toBeGreaterThan(0);
+      const product = database.products.create({
+        seller: userID,
+        name: faker.commerce.product(),
+        price,
+        amount: 1,
+        status: ProductStatus.판매중,
+      });
+      await database.em.flush();
 
-      productID = insertId;
+      expect(product.id).toBeGreaterThan(0);
+
+      productID = product.id;
     });
 
     it("2. 구매요청", async () => {
@@ -109,11 +118,6 @@ describe("거래 API", () => {
         expect(res1.status).toBe(201);
         expect(res2.status).toBe(201);
       } catch (error) {
-        const [[row]] = await database.pool.query<RowDataPacket[]>(
-          "SHOW ENGINE INNODB STATUS;"
-        );
-
-        console.error(row.Status);
         throw error;
       }
     });
@@ -123,10 +127,17 @@ describe("거래 API", () => {
     let productID: number;
 
     it("1. 상품등록", async () => {
-      const { insertId } = await InsertProduct.run({ amount: 1, userID });
-      expect(insertId).toBeGreaterThan(0);
+      const product = database.products.create({
+        seller: userID,
+        name: faker.commerce.product(),
+        price,
+        amount: 1,
+        status: ProductStatus.판매중,
+      });
 
-      productID = insertId;
+      expect(product.id).toBeGreaterThan(0);
+
+      productID = product.id;
     });
 
     it("2. 구매요청", async () => {
@@ -157,10 +168,18 @@ describe("거래 API", () => {
     let productID: number;
 
     it("1. 상품등록", async () => {
-      const { insertId } = await InsertProduct.run({ amount: 1, userID });
-      expect(insertId).toBeGreaterThan(0);
+      const product = database.products.create({
+        seller: userID,
+        name: faker.commerce.product(),
+        price,
+        amount: 1,
+        status: ProductStatus.판매중,
+      });
+      await database.em.flush();
 
-      productID = insertId;
+      expect(product.id).toBeGreaterThan(0);
+
+      productID = product.id;
     });
 
     it("2. 구매요청", async () => {
@@ -204,10 +223,18 @@ describe("거래 API", () => {
     let productID: number;
 
     it("1. 상품등록", async () => {
-      const { insertId } = await InsertProduct.run({ amount: 1, userID });
-      expect(insertId).toBeGreaterThan(0);
+      const product = database.products.create({
+        seller: userID,
+        name: faker.commerce.product(),
+        price,
+        amount: 1,
+        status: ProductStatus.판매중,
+      });
+      await database.em.flush();
 
-      productID = insertId;
+      expect(product.id).toBeGreaterThan(0);
+
+      productID = product.id;
     });
 
     it("2. 구매요청", async () => {
@@ -232,10 +259,18 @@ describe("거래 API", () => {
     let productID: number;
 
     it("1. 상품등록", async () => {
-      const { insertId } = await InsertProduct.run({ amount: 1, userID });
-      expect(insertId).toBeGreaterThan(0);
+      const product = database.products.create({
+        seller: userID,
+        name: faker.commerce.product(),
+        price,
+        amount: 1,
+        status: ProductStatus.판매중,
+      });
+      await database.em.flush();
 
-      productID = insertId;
+      expect(product.id).toBeGreaterThan(0);
+
+      productID = product.id;
     });
 
     it("2. 구매요청", async () => {
@@ -282,8 +317,8 @@ describe("거래 API", () => {
 
   describe("[사후작업] 회원삭제", () => {
     it("1. 성공", async () => {
-      const { affectedRows } = await DeleteUser.run({ userID });
-      expect(affectedRows).toBeGreaterThan(0);
+      const user = database.users.getReference(userID);
+      await database.em.removeAndFlush(user);
     });
   });
 });

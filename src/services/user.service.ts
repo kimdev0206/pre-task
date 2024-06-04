@@ -1,23 +1,22 @@
 import HttpError from "../errors/HttpError";
 import IUser from "../interfaces/IUser.dto";
-import UserRepository from "../repositories/user.repository";
+import database from "../database";
 
 export default class UserService {
-  repository = new UserRepository();
-
   async signUp(dto: IUser) {
-    const [row] = await this.repository.selectUser(dto.name);
+    const row = await database.users.findOne({ name: dto.name });
 
     if (row) {
       const message = "동일한 name 의 회원이 존재합니다.";
       throw new HttpError(409, message);
     }
 
-    await this.repository.insertUser(dto);
+    database.users.create(dto);
+    await database.em.flush();
   }
 
   async logIn(dto: IUser) {
-    const [row] = await this.repository.selectUser(dto.name);
+    const row = await database.users.findOne({ name: dto.name });
 
     if (!row) {
       const message = "요청하신 name 의 회원이 존재하지 않습니다.";
@@ -29,6 +28,6 @@ export default class UserService {
       throw new HttpError(400, message);
     }
 
-    return row.userID;
+    return row.id;
   }
 }

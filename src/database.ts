@@ -1,24 +1,17 @@
-import mysql, { Pool, PoolOptions } from "mysql2/promise";
+import { Request, Response, NextFunction } from "express";
+import { MikroORM, MySqlDriver, RequestContext } from "@mikro-orm/mysql";
+import config from "./mikro-orm.config";
+import { Product, Transaction, User } from "./entities";
 
 class Database {
-  options: PoolOptions = {
-    host: "localhost",
-    user: "root",
-    password: "root",
-    database: "pre-task",
-  };
+  orm = MikroORM.initSync<MySqlDriver>(config);
+  em = this.orm.em;
+  products = this.orm.em.getRepository(Product);
+  transactions = this.orm.em.getRepository(Transaction);
+  users = this.orm.em.getRepository(User);
 
-  readonly pool: Pool;
-
-  constructor() {
-    this.pool = mysql.createPool(this.options);
-  }
-
-  connect() {
-    this.pool
-      .query("SELECT 1;")
-      .then(() => console.log("Connected on 3306"))
-      .catch((error) => console.error(error));
+  connect(req: Request, res: Response, next: NextFunction) {
+    RequestContext.create(this.em, next);
   }
 }
 
